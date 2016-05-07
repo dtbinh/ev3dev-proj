@@ -12,10 +12,13 @@ class Main():
         self.wm = None
         self.number = 6
         self.mode = 'Easy'
+        self.speed_cap = 75
+        self.negative_speed_cap = self.speed_cap * -1
 
         self.normal_speed = 0
         self.speed_b = 0
         self.speed_c = 0
+        self.direction = 'straight'
 
         self.motor_b = ev3.LargeMotor(address='outB')
         self.motor_b.reset
@@ -50,24 +53,36 @@ class Main():
     def Control_Mode(self):
         while True:
 
+
+            self.wm.rpt_mode = cwiid.RPT_BTN | cwiid.RPT_ACC
             self.state = self.wm.state
+            self.acc = self.state['acc']
             self.buttons = self.state['buttons']
 
             if self.buttons == buttons.plus:
                 self.mode =  'Easy'
             elif self.buttons == buttons.minus:
                 self.mode = 'Hard'
+            elif self.buttons == buttons.a:
+                self.mode = 'Turn'
+            elif self.buttons == buttons.home:
+                exit()
 
             if self.mode == 'Easy':
-                self.Easy_Control()
+                powers = self.Easy_Control()
             elif self.mode == 'Hard':
-                self.Hard_Control
+                powers = self.Hard_Control()
+            elif self.mode == 'Turn':
+                powers = self.Quick_Turn()
+
+            self.motor_b.duty_cycle_sp = powers[0]
+            self.motor_c.duty_cycle_sp = powers[1]
+
+            sleep(0.1)
+
+
 
     def Easy_Control(self):
-
-
-        self.state = self.wm.state
-        self.buttons = self.state['buttons']
 
         if self.buttons == buttons.two:
             self.speed_b += 10
@@ -76,107 +91,96 @@ class Main():
             self.speed_b -= 10
             self.speed_c -= 10
         elif self.buttons == buttons.two + buttons.right:
-            self.speed_b -= 5
-            self.speed_c = 50
+            self.speed_b -= 10
+            self.speed_c += 10
         elif self.buttons == buttons.two + buttons.left:
-            self.speed_b = 50
-            self.speed_c -= 5
+            self.speed_b += 10
+            self.speed_c -= 10
         elif self.buttons == buttons.one + buttons.right:
-            self.speed_b += 5
-            self.speed_c = -50
+            self.speed_b += 10
+            self.speed_c -= 10
         elif self.buttons == buttons.one + buttons.left:
-            self.speed_b = -50
-            self.speed_c += 5
-        elif self.buttons == buttons.home:
-            exit()
+            self.speed_b -= 10
+            self.speed_c += 10
         else:
             self.speed_b = 0
             self.speed_c = 0
 
-        if self.speed_b >= 100:
-            self.speed_b = 100
-        if self.speed_c >= 100:
-            self.speed_c = 100
-        if self.speed_b <= -100:
-            self.speed_b = -100
-        if self.speed_c <= -100:
-            self.speed_c = -100
+        if self.speed_b >= self.speed_cap:
+            self.speed_b = self.speed_cap
+        if self.speed_c >= self.speed_cap:
+            self.speed_c = self.speed_cap
+        if self.speed_b <= self.negative_speed_cap:
+            self.speed_b = self.negative_speed_cap
+        if self.speed_c <= self.negative_speed_cap:
+            self.speed_c = self.negative_speed_cap
 
-        self.motor_b.duty_cycle_sp = self.speed_b
-        self.motor_c.duty_cycle_sp = self.speed_c
+        return(self.speed_b, self.speed_c)
 
-        sleep(.1)
+
 
     def Hard_Control(self):
 
 
-
-        self.state = self.wm.state
-        self.acc = self.state['acc']
-        self.buttons = self.state['buttons']
+        #self.turn_power = 0
+        #self.correction = 0
 
         if self.buttons == buttons.two:
             self.speed += 10
         elif self.buttons == buttons.one:
             self.speed -= 10
-        elif self.buttons == buttons.home:
-            exit()
         else:
             self.speed = 0
 
-        if self.acc[1] != 123:
-            if self.acc[1] > 123:
-                self.direction = "left"
-            elif self.acc[1] < 123:
-                self.direction = "right"
+        if self.acc[1] != 120:
+            if self.acc[1] > 120:
+                self.direction = 'left'
             else:
-                direction = "straight"
-
-            if self.direction != "straight" and self.speed != 0:
-                if self.acc[1] > 200 and self.direction == "left":
-                    self.power_b = 100
-                    self.power_c = 0
-                elif self.acc[1] < 0 and self.direction == "right":
-                    self.power_b = 0
-                    self.power_c = 100
-                elif self.acc[1] < 200 and self.direction == "left":
-                    self.calc = (self.acc[1] - 120) / 50.0
-                    if self.calc < 0:
-                        self.calc = 0
-                    self.power_b = self.calc * (self.speed - 20)
-                    if self.power_b >= 100:
-                        self.power_b = 0
-                    self.power_c = self.speed
-                elif self.acc[1] > 0 and self.direction == "right":
-                    self.power_b = self.speed
-                    self.calc = (self.acc[1] - 120) / 50.0
-                    if self.calc < 0:
-                        self.calc = 0
-                    self.power_c = self.calc * (self.speed - 20)
+                self.direction = 'right'
         else:
-            self.power_b = self.speed
-            self.power_c = self.speed
+            self.direction = 'straight'
+
+        self.turn_power = 120 - self.acc[1]
+        if self.turn_power < 0:
+            self.turn_power = self.turn_power * -1
+
+        self.correction = float(self.turn_power * 3) / 100
+        self.correction = 1 - self.correction
+
+        if self.direction == 'left':
+            self.speed_b = self.speed
+            self.speed_c = self.speed * self.correction
+        elif self.direction == 'right':
+            self.speed_b = self.speed * self.correction
+            self.speed_c = self.speed
+        elif self.direction == 'straight':
+            self.speed_b = self.speed
+            self.speed_c = self.speed
+        else:
+            print("Speed calc error.")
+
+        if self.speed_b >= self.speed_cap:
+            self.speed_b = self.speed_cap
+        if self.speed_c >= self.speed_cap:
+            self.speed_c = self.speed_cap
+        if self.speed_b <= self.negative_speed_cap:
+            self.speed_b = self.negative_speed_cap
+        if self.speed_c <= self.negative_speed_cap:
+            self.speed_c = self.negative_speed_cap
+
+        return(self.speed_b, self.speed_c)
 
 
+    def Quick_Turn(self):
 
+        if self.buttons == buttons.a:
+            self.speed_b = 50
+            self.speed_c = -50
+        else:
+            self.speed_b = 0
+            self.speed_c = 0
 
-        if self.speed_b >= 100:
-            self.speed_b = 100
-        if self.speed_c >= 100:
-            self.speed_c = 100
-        if self.speed_b <= -100:
-            self.speed_b = -100
-        if self.speed_c <= -100:
-            self.speed_c = -100
-
-        self.motor_b.duty_cycle_sp = self.speed_b
-        self.motor_c.duty_cycle_sp = self.speed_c
-
-        print(self.speed_b)
-        print(self.speed_c)
-
-        sleep(.1)
-
+        return(self.speed_b, self.speed_c)
 
 
 

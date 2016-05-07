@@ -1,0 +1,21 @@
+remote:
+  host: "ev3dev"
+  user: "robot"
+  path: "~/nad-Coding"
+behaviour:
+  uploadOnSave: true
+  syncDownOnOpen: true
+  forgetConsole: false
+  autoHideConsole: true
+  alwaysSyncAll: true
+option:
+  deleteFiles: false
+  exclude: [
+    ".sync-config.cson"
+    ".git"
+    "node_modules"
+    "tmp"
+    "vendor"
+    "LICENSE"
+    "README.md"
+  ]

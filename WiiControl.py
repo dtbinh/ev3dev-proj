@@ -21,18 +21,19 @@ class Main():
         self.direction = 'straight'
 
         self.motor_b = ev3.LargeMotor(address='outB')
-        self.motor_b.reset
+        self.motor_b.reset()
         self.motor_b.duty_cycle_sp = self.normal_speed
         self.motor_b.command = 'run-direct'
 
         self.motor_c = ev3.LargeMotor(address='outC')
-        self.motor_c.reset
+        self.motor_c.reset()
         self.motor_c.duty_cycle_sp = self.normal_speed
         self.motor_c.command = 'run-direct'
 
-        #self.motor_a = ev3.MediumMotor(address='outA')
-        #self.motor_a.reset
-        #self.motor_a.duty_cycle_sp = 100
+        self.turn_motor = ev3.MediumMotor()
+        self.turn_motor.reset()
+        self.turn_motor.duty_cycle_sp = 50
+        self.turn_motor.time_sp = 100
 
         self.Connect()
         self.Control_Mode()
@@ -69,8 +70,6 @@ class Main():
                 self.mode = 'Hard'
             elif self.buttons == buttons.a:
                 self.mode = 'Turn'
-        #    elif self.buttons == buttons.b:
-        #        self.Catapult()
             elif self.buttons == buttons.home:
                 exit()
 
@@ -91,26 +90,40 @@ class Main():
     def Easy_Control(self):
 
         if self.buttons == buttons.two:
-            self.speed_b += 10
-            self.speed_c += 10
-        elif self.buttons == buttons.one:
+            self.turn_motor.position_sp = 0
+            self.turn_motor.command = 'run-to-abs-pos'
             self.speed_b -= 10
             self.speed_c -= 10
-        elif self.buttons == buttons.two + buttons.right:
-            self.speed_b -= 10
-            self.speed_c += 10
-        elif self.buttons == buttons.two + buttons.left:
+        elif self.buttons == buttons.one:
+            self.turn_motor.position_sp = 0
+            self.turn_motor.command = 'run-to-abs-pos'
             self.speed_b += 10
+            self.speed_c += 10
+        elif self.buttons == buttons.two + buttons.right:
+            self.turn_motor.duty_cycle_sp = -50
+            self.turn_motor.command = 'run-timed'
+            self.speed_b -= 10
+            self.speed_c -= 10
+        elif self.buttons == buttons.two + buttons.left:
+            self.turn_motor.duty_cycle_sp = 50
+            self.turn_motor.command = 'run-timed'
+            self.speed_b -= 10
             self.speed_c -= 10
         elif self.buttons == buttons.one + buttons.right:
             self.speed_b += 10
-            self.speed_c -= 10
-        elif self.buttons == buttons.one + buttons.left:
-            self.speed_b -= 10
             self.speed_c += 10
+            self.turn_motor.duty_cycle_sp = -50
+            self.turn_motor.command = 'run-timed'
+        elif self.buttons == buttons.one + buttons.left:
+            self.speed_b += 10
+            self.speed_c += 10
+            self.turn_motor.duty_cycle_sp = 05
+            self.turn_motor.command = 'run-timed'
         else:
             self.speed_b = 0
             self.speed_c = 0
+
+
 
         if self.speed_b >= self.speed_cap:
             self.speed_b = self.speed_cap
@@ -187,19 +200,6 @@ class Main():
             self.speed_c = 0
 
         return(self.speed_b, self.speed_c)
-
-#    def Catapult(self):
-#
-#        self.motor_a.duty_cycle_sp = 100
-#        self.motor_a.position_sp = -100
-#        self.motor_a.command = 'run-to-rel-pos'
-#
-#        sleep(5)
-#
-#        self.motor_a.duty_cycle_sp = 100
-#        self.motor_a.position_sp = 100
-#        self.motor_a.command = 'run-to-rel-pos'
-
 
 
 

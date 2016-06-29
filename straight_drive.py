@@ -5,7 +5,7 @@ from ev3dev.ev3 import TouchSensor as TouchSensor
 from time import sleep
 
 power = -100
-run_time = 2
+run_time = 3
 
 motor_b = LargeMotor(address='outB')
 motor_c = LargeMotor(address='outC')
@@ -29,13 +29,12 @@ while True:
         sleep(.01)
 
 
-
-sleep(run_time)
-
 motor_b.duty_cycle_sp = power
 motor_c.duty_cycle_sp = power
 
-motor_b.command = 'stop'
-motor_c.command = 'stop'
+sleep(run_time)
+
+motor_b.duty_cycle_sp = 0
+motor_c.duty_cycle_sp = 0
 
 sleep(1)

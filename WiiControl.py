@@ -90,35 +90,37 @@ class Main():
     def Easy_Control(self):
 
         if self.buttons == buttons.two:
-            self.turn_motor.position_sp = 0
-            self.turn_motor.command = 'run-to-abs-pos'
+            if self.turn_motor.position > 10:
+                self.turn_motor.position_sp = -25
+            elif self.turn_motor.position < -10:
+                self.turn_motor.position_sp = 25
+            else:
+                self.turn_motor.position_sp = 0
             self.speed_b -= 10
             self.speed_c -= 10
         elif self.buttons == buttons.one:
-            self.turn_motor.position_sp = 0
-            self.turn_motor.command = 'run-to-abs-pos'
+            if self.turn_motor.position > 10:
+                self.turn_motor.position_sp = -25
+            elif self.turn_motor.position < -10:
+                self.turn_motor.position_sp = 25
             self.speed_b += 10
             self.speed_c += 10
         elif self.buttons == buttons.two + buttons.right:
-            self.turn_motor.duty_cycle_sp = -50
-            self.turn_motor.command = 'run-timed'
+            self.turn_motor.position_sp = -25
             self.speed_b -= 10
             self.speed_c -= 10
         elif self.buttons == buttons.two + buttons.left:
-            self.turn_motor.duty_cycle_sp = 50
-            self.turn_motor.command = 'run-timed'
+            self.turn_motor.position_sp = 25
             self.speed_b -= 10
             self.speed_c -= 10
         elif self.buttons == buttons.one + buttons.right:
             self.speed_b += 10
             self.speed_c += 10
-            self.turn_motor.duty_cycle_sp = -50
-            self.turn_motor.command = 'run-timed'
+            self.turn_motor.position_sp = -25
         elif self.buttons == buttons.one + buttons.left:
             self.speed_b += 10
             self.speed_c += 10
-            self.turn_motor.duty_cycle_sp = 05
-            self.turn_motor.command = 'run-timed'
+            self.turn_motor.position_sp = 25
         else:
             self.speed_b = 0
             self.speed_c = 0
@@ -133,6 +135,9 @@ class Main():
             self.speed_b = self.negative_speed_cap
         if self.speed_c <= self.negative_speed_cap:
             self.speed_c = self.negative_speed_cap
+
+        if self.turn_motor.position + self.turn_motor.position_sp < 50 and self.turn_motor.position + self.turn_motor.position_sp > -50:
+            self.turn_motor.command = 'run-to-rel-pos'
 
         return(self.speed_b, self.speed_c)
 
